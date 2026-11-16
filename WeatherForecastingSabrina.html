@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Greendale Grimoire — Weather</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    /* Core CAOS palette */
+    --ink: #0a0708;
+    --ink-2: #110c0e;
+    --paper: #e8e0d5;
+    --paper-dim: #b9aea1;
+    --blood: #8b1a1a;
+    --blood-bright: #b22222;
+    --blood-glow: #ff4d4d;
+    --gold: #c9a227;
+    --gold-dim: #8a6d1f;
+    --emerald: #1a4d2e;
+    --emerald-bright: #2d6a4f;
+    --amethyst: #4a2c5a;
+    --sapphire: #1e3a5f;
+    --candle: #f5e6c8;
+
+    /* Active theme */
+    --bg-1: #0a0708;
+    --bg-2: #1a0f12;
+    --bg-3: #0d0a0c;
+    --accent: var(--blood-bright);
+    --accent-2: var(--gold);
+    --glow: rgba(178,34,34,0.35);
+  }
+
+  /* ---------- Witchy Weather Themes ---------- */
+  body[data-theme="celestial"] { /* clear day — golden hour in Greendale */
+    --bg-1:#1a1208; --bg-2:#2a1f10; --bg-3:#0f0c08;
+    --accent: #d4a017; --accent-2: #e8c547;
+    --glow: rgba(212,160,23,0.3);
+  }
+  body[data-theme="witching"] { /* clear night — the witching hour */
+    --bg-1:#0a0710; --bg-2:#150f1f; --bg-3:#08060c;
+    --accent: #7b2d8e; --accent-2: #a855c9;
+    --glow: rgba(123,45,142,0.35);
+  }
+  body[data-theme="grey-morn"] { /* cloudy */
+    --bg-1:#0d0d0d; --bg-2:#1a1a1a; --bg-3:#111111;
+    --accent: #7a7a7a; --accent-2: #b0b0b0;
+    --glow: rgba(150,150,150,0.2);
+  }
+  body[data-theme="weeping"] { /* rain — the weeping sky */
+    --bg-1:#0a0d14; --bg-2:#141b2a; --bg-3:#080a10;
+    --accent: #3d5a80; --accent-2: #6b8cae;
+    --glow: rgba(61,90,128,0.35);
+  }
+  body[data-theme="frost"] { /* snow — the cold moon */
+    --bg-1:#0d1014; --bg-2:#1a2028; --bg-3:#0a0d10;
+    --accent: #a8c5d6; --accent-2: #d6e8f0;
+    --glow: rgba(168,197,214,0.3);
+  }
+  body[data-theme="hellfire"] { /* thunder — hellfire */
+    --bg-1:#120608; --bg-2:#2a0a10; --bg-3:#0d0406;
+    --accent: #b22222; --accent-2: #ff6b35;
+    --glow: rgba(178,34,34,0.45);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { min-height: 100%; }
+
+  body {
+    font-family: 'Cormorant Garamond', 'IM Fell English', Georgia, serif;
+    color: var(--paper);
+    background: var(--bg-1);
+    background-image:
+      radial-gradient(ellipse at 20% 0%, rgba(139,26,26,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, rgba(201,162,39,0.08) 0%, transparent 50%),
+      linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 45%, var(--bg-3) 100%);
+    background-attachment: fixed;
+    transition: background 1.4s ease;
+    min-height: 100vh;
+    padding: 2.5rem 1.25rem 4rem;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Parchment grain */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    mix-blend-mode: overlay;
+  }
+
+  /* Candle-glow orbs */
+  body::after {
+    content: "";
+    position: fixed;
+    width: 600px; height: 600px;
+    top: -200px; left: -200px;
+    background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    animation: flicker 5s ease-in-out infinite;
+    transition: background 1.4s ease;
+  }
+  @keyframes flicker {
+    0%,100% { opacity: 0.7; transform: scale(1); }
+    25%     { opacity: 0.9; transform: scale(1.03); }
+    50%     { opacity: 0.6; transform: scale(0.98); }
+    75%     { opacity: 0.85; transform: scale(1.02); }
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Title / Crest ---------- */
+  .masthead {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+  }
+  .crest {
+    font-size: 2rem;
+    color: var(--accent-2);
+    letter-spacing: 0.5em;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 20px var(--glow);
+    opacity: 0.9;
+  }
+  .masthead h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--paper);
+    text-shadow: 0 0 30px var(--glow), 0 2px 4px rgba(0,0,0,0.8);
+    line-height: 1.2;
+  }
+  .masthead h1 .blood { color: var(--accent); }
+  .masthead .subtitle {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--paper-dim);
+    font-size: 1rem;
+    margin-top: 0.4rem;
+    letter-spacing: 0.08em;
+  }
+
+  /* ---------- Search ---------- */
+  .search-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    max-width: 620px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .search-input-wrap { position: relative; flex: 1; }
+  .search-input-wrap svg {
+    position: absolute;
+    left: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px; height: 18px;
+    color: var(--accent-2);
+    opacity: 0.7;
+  }
+  .search-input-wrap input {
+    width: 100%;
+    padding: 0.95rem 1.1rem 0.95rem 2.9rem;
+    border-radius: 2px;
+    border: 1px solid rgba(201,162,39,0.35);
+    background: rgba(0,0,0,0.45);
+    color: var(--paper);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    letter-spacing: 0.03em;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+  }
+  .search-input-wrap input::placeholder {
+    color: var(--paper-dim);
+    font-style: italic;
+    opacity: 0.6;
+  }
+  .search-input-wrap input:focus {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 0 20px var(--glow);
+    background: rgba(0,0,0,0.6);
+  }
+  .search-btn {
+    padding: 0 1.6rem;
+    border-radius: 2px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .search-btn:hover {
+    background: var(--accent);
+    color: var(--ink);
+    box-shadow: 0 0 25px var(--glow);
+  }
+  .search-btn:active { transform: scale(0.97); }
+
+  /* ---------- Cards / Grimoire pages ---------- */
+  .card {
+    background: linear-gradient(160deg, rgba(10,7,8,0.88), rgba(20,14,16,0.92));
+    border: 1px solid rgba(201,162,39,0.22);
+    border-radius: 3px;
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,0.5),
+      0 20px 50px -20px rgba(0,0,0,0.9),
+      inset 0 0 60px rgba(139,26,26,0.06);
+    position: relative;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+  /* Art-nouveau corner ornaments */
+  .card::before,
+  .card::after {
+    content: "✦";
+    position: absolute;
+    color: var(--accent-2);
+    font-size: 0.7rem;
+    opacity: 0.5;
+    line-height: 1;
+  }
+  .card::before { top: 0.55rem; left: 0.7rem; }
+  .card::after  { bottom: 0.55rem; right: 0.7rem; transform: rotate(180deg); }
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.2s; }
+  .card:nth-child(4) { animation-delay: 0.3s; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--accent-2);
+    font-weight: 600;
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(201,162,39,0.35), transparent);
+  }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: 2rem; overflow: hidden; }
+  .hero-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .location {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Cinzel', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--paper);
+  }
+  .location svg { width: 17px; height: 17px; color: var(--accent); }
+  .updated {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.8rem;
+    color: var(--paper-dim);
+    margin-top: 0.35rem;
+  }
+
+  .hero-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .hero-temp-wrap { display: flex; align-items: flex-start; }
+  .hero-temp {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(3.8rem, 11vw, 6.5rem);
+    font-weight: 700;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    background: linear-gradient(160deg, var(--paper) 10%, var(--accent-2) 60%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 40px var(--glow);
+  }
+  .hero-unit {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    color: var(--paper-dim);
+    margin-top: 0.8rem;
+    margin-left: 0.2rem;
+  }
+  .hero-meta { margin-top: 0.6rem; }
+  .hero-condition {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    color: var(--paper);
+    letter-spacing: 0.05em;
+  }
+  .hero-feels {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.9rem;
+    color: var(--paper-dim);
+    margin-top: 0.25rem;
+  }
+  .hero-icon {
+    font-size: clamp(4.5rem, 13vw, 7rem);
+    filter: drop-shadow(0 0 35px var(--glow));
+    animation: float 5s ease-in-out infinite;
+    line-height: 1;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(-3deg); }
+    50%     { transform: translateY(-12px) rotate(3deg); }
+  }
+
+  /* ---------- Detail chips ---------- */
+  .details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+  }
+  .detail {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(201,162,39,0.14);
+    border-radius: 2px;
+    padding: 0.85rem 0.9rem;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  .detail:hover {
+    border-color: rgba(201,162,39,0.45);
+    background: rgba(0,0,0,0.5);
+    box-shadow: 0 0 18px rgba(201,162,39,0.08);
+  }
+  .detail-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--paper-dim);
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+  }
+  .detail-label .em { font-size: 0.85rem; color: var(--accent-2); }
+  .detail-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--paper);
+  }
+
+  /* ---------- Hourly ---------- */
+  .hourly-strip {
+    display: flex;
+    gap: 0.65rem;
+    overflow-x: auto;
+    padding: 0.25rem 0.25rem 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+  }
+  .hourly-strip::-webkit-scrollbar { height: 5px; }
+  .hourly-strip::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 0;
+  }
+  .hour-card {
+    flex: 0 0 84px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(201,162,39,0.14);
+    border-radius: 2px;
+    padding: 0.9rem 0.4rem;
+    text-align: center;
+    transition: all 0.25s ease;
+    position: relative;
+  }
+  .hour-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 20px -8px var(--glow);
+  }
+  .hour-time {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    color: var(--paper-dim);
+    text-transform: uppercase;
+  }
+  .hour-icon { font-size: 1.5rem; margin: 0.4rem 0; filter: drop-shadow(0 0 8px var(--glow)); }
+  .hour-temp {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--paper);
+  }
+  .hour-humidity {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.72rem;
+    color: var(--paper-dim);
+    margin-top: 0.1rem;
+  }
+  .hour-precip {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.7rem;
+    color: var(--accent-2);
+    margin-top: 0.15rem;
+    font-weight: 600;
+  }
+
+  /* ---------- Alert ---------- */
+  .alert-banner {
+    background: linear-gradient(135deg, rgba(139,26,26,0.25), rgba(80,10,10,0.15));
+    border: 1px solid var(--accent);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    animation: rise 0.6s ease forwards;
+    box-shadow: 0 0 30px rgba(139,26,26,0.2);
+  }
+  .alert-banner strong {
+    font-family: 'Cinzel', serif;
+    color: var(--accent-2);
+    display: block;
+    margin-bottom: 0.3rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+  }
+  .alert-banner p {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--paper-dim);
+  }
+
+  /* ---------- History ---------- */
+  .history-text {
+    font-family: 'Cormorant Garamond', serif;
+    color: var(--paper-dim);
+    line-height: 1.75;
+    font-size: 1.05rem;
+  }
+  .history-text strong { color: var(--paper); font-weight: 600; }
+  .history-text .accent { color: var(--accent); font-weight: 700; font-style: italic; }
+  .history-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.1rem;
+    flex-wrap: wrap;
+  }
+  .history-stat {
+    flex: 1;
+    min-width: 130px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(201,162,39,0.14);
+    border-radius: 2px;
+    padding: 0.9rem 1rem;
+  }
+  .history-stat .k {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    color: var(--paper-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .history-stat .v {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 0.3rem;
+    color: var(--paper);
+  }
+
+  /* ---------- Loading / Error ---------- */
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem;
+    color: var(--paper-dim);
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 1rem;
+  }
+  .pentagram-spinner {
+    width: 44px; height: 44px;
+    position: relative;
+    animation: spin 8s linear infinite;
+  }
+  .pentagram-spinner svg { width: 100%; height: 100%; }
+  .pentagram-spinner svg path {
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    fill: none;
+    filter: drop-shadow(0 0 6px var(--glow));
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error {
+    background: rgba(139,26,26,0.15);
+    border: 1px solid rgba(178,34,34,0.5);
+    color: #fca5a5;
+    padding: 1rem 1.25rem;
+    border-radius: 2px;
+    text-align: center;
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+  }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    text-align: center;
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 0.78rem;
+    color: var(--paper-dim);
+    margin-top: 2.5rem;
+    opacity: 0.6;
+    line-height: 1.7;
+  }
+  .footer a { color: var(--accent-2); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ---------- Salem ---------- */
+  .salem {
+    position: fixed;
+    bottom: 1rem;
+    right: 1.5rem;
+    font-size: 1.8rem;
+    opacity: 0.25;
+    z-index: 2;
+    animation: salem-watch 7s ease-in-out infinite;
+    pointer-events: none;
+    filter: drop-shadow(0 0 10px var(--glow));
+  }
+  @keyframes salem-watch {
+    0%,100% { transform: translateY(0) rotate(0deg); opacity: 0.25; }
+    50%     { transform: translateY(-6px) rotate(-6deg); opacity: 0.35; }
+  }
+
+  @media (max-width: 520px) {
+    body { padding: 1.5rem 0.9rem 3rem; }
+    .card { padding: 1.35rem; }
+    .hero { padding: 1.5rem; }
+    .search-bar { flex-direction: column; }
+    .search-btn { padding: 0.8rem; }
+  }
+</style>
+</head>
+<body data-theme="celestial">
+
+<div class="app">
+
+  <!-- Masthead -->
+  <header class="masthead">
+    <div class="crest">✦ ⛧ ✦</div>
+    <h1>Greendale <span class="blood">Grimoire</span></h1>
+    <div class="subtitle">— a weather record for the mortal and the occult —</div>
+  </header>
+
+  <!-- Search -->
+  <form class="search-bar" id="searchForm" autocomplete="off">
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input id="cityInput" type="text" placeholder="Search a town or city…" />
+    </div>
+    <button class="search-btn" type="submit">Consult</button>
+  </form>
+
+  <!-- Alerts -->
+  <div id="alertContainer"></div>
+
+  <!-- Loading -->
+  <div id="loadingMsg" class="loading" style="display:none;">
+    <div class="pentagram-spinner">
+      <svg viewBox="0 0 100 100">
+        <path d="M50 5 L61 38 L95 38 L67 59 L78 92 L50 71 L22 92 L33 59 L5 38 L39 38 Z" />
+      </svg>
+    </div>
+    <span>Consulting the spirits…</span>
+  </div>
+
+  <!-- Error -->
+  <div id="errorMsg" class="error" style="display:none;"></div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" style="display:none;">
+
+    <!-- Hero -->
+    <section class="card hero">
+      <div class="hero-head">
+        <div>
+          <div class="location">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span id="locationName">—</span>
+          </div>
+          <div class="updated" id="lastUpdated"></div>
+        </div>
+      </div>
+
+      <div class="hero-body">
+        <div>
+          <div class="hero-temp-wrap">
+            <div class="hero-temp" id="currentTemp">—</div>
+            <div class="hero-unit">°C</div>
+          </div>
+          <div class="hero-meta">
+            <div class="hero-condition" id="currentCondition">—</div>
+            <div class="hero-feels" id="feelsLike">—</div>
+          </div>
+        </div>
+        <div class="hero-icon" id="currentIcon">—</div>
+      </div>
+
+      <div class="details">
+        <div class="detail">
+          <div class="detail-label"><span class="em">☾</span> Humidity</div>
+          <div class="detail-value" id="humidity">—</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label"><span class="em">✧</span> Wind</div>
+          <div class="detail-value" id="wind">—</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label"><span class="em">✧</span> Gusts</div>
+          <div class="detail-value" id="gusts">—</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label"><span class="em">◈</span> Pressure</div>
+          <div class="detail-value" id="pressure">—</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label"><span class="em">☀</span> Sunrise</div>
+          <div class="detail-value" id="sunrise">—</div>
+        </div>
+        <div class="detail">
+          <div class="detail-label"><span class="em">☾</span> Sunset</div>
+          <div class="detail-value" id="sunset">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hourly -->
+    <section class="card">
+      <div class="section-title">The Coming Hours</div>
+      <div class="hourly-strip" id="hourlyForecast"></div>
+    </section>
+
+    <!-- History -->
+    <section class="card">
+      <div class="section-title">Yesterday &amp; Today</div>
+      <div class="history-text" id="historicalText">Consulting the archives…</div>
+    </section>
+
+  </div>
+
+  <div class="footer">
+    Weather data conjured via <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · No API key required<br>
+    For matters of life and death, always heed official warnings. The spirits are not liable.
+  </div>
+
+  <div class="salem">🐈‍⬛</div>
+
+</div>
+
+<script>
+  // ---------- DOM ----------
+  const searchForm    = document.getElementById('searchForm');
+  const cityInput     = document.getElementById('cityInput');
+  const errorMsg      = document.getElementById('errorMsg');
+  const loadingMsg    = document.getElementById('loadingMsg');
+  const dashboard     = document.getElementById('dashboard');
+  const alertContainer = document.getElementById('alertContainer');
+
+  // ---------- WMO codes ----------
+  const weatherCodes = {
+    0:{text:'Clear sky',icon:'☀️'}, 1:{text:'Mainly clear',icon:'🌤️'},
+    2:{text:'Partly cloudy',icon:'⛅'}, 3:{text:'Overcast',icon:'☁️'},
+    45:{text:'Fog',icon:'🌫️'}, 48:{text:'Rime fog',icon:'🌫️'},
+    51:{text:'Light drizzle',icon:'🌦️'}, 53:{text:'Moderate drizzle',icon:'🌦️'},
+    55:{text:'Dense drizzle',icon:'🌧️'},
+    61:{text:'Slight rain',icon:'🌧️'}, 63:{text:'Moderate rain',icon:'🌧️'},
+    65:{text:'Heavy rain',icon:'🌧️'},
+    71:{text:'Slight snow',icon:'🌨️'}, 73:{text:'Moderate snow',icon:'🌨️'},
+    75:{text:'Heavy snow',icon:'❄️'},
+    80:{text:'Rain showers',icon:'🌦️'}, 81:{text:'Moderate showers',icon:'🌧️'},
+    82:{text:'Violent showers',icon:'⛈️'},
+    95:{text:'Thunderstorm',icon:'⛈️'}, 96:{text:'Thunderstorm + hail',icon:'⛈️'},
+    99:{text:'Thunderstorm + heavy hail',icon:'⛈️'}
+  };
+  const getWeatherInfo = (code) => weatherCodes[code] || { text: 'Unknown', icon: '❓' };
+
+  // ---------- Theme resolver (CAOS moods) ----------
+  function applyTheme(code, isDay) {
+    let theme;
+    if (code >= 95)                                        theme = 'hellfire';
+    else if (code >= 71 && code <= 77)                     theme = 'frost';
+    else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) theme = 'weeping';
+    else if (code === 45 || code === 48)                   theme = 'grey-morn';
+    else if (code === 3)                                   theme = 'grey-morn';
+    else if (code === 2)                                   theme = isDay ? 'grey-morn' : 'witching';
+    else                                                   theme = isDay ? 'celestial' : 'witching';
+    document.body.dataset.theme = theme;
+  }
+
+  // ---------- Compass ----------
+  const compass = ['N','NE','E','SE','S','SW','W','NW'];
+  const toCompass = (deg) => compass[Math.round(deg / 45) % 8];
+
+  // ---------- API ----------
+  async function geocode(city) {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('The spirits are silent. Geocoding service unavailable.');
+    const data = await res.json();
+    if (!data.results || !data.results.length) throw new Error(`The town of "${city}" cannot be found in any realm.`);
+    const r = data.results[0];
+    return { lat: r.latitude, lon: r.longitude, name: r.name, country: r.country || '' };
+  }
+
+  async function fetchWeather(lat, lon) {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,wind_speed_10m,wind_gusts_10m,wind_direction_10m,surface_pressure,weather_code` +
+      `&hourly=temperature_2m,relative_humidity_2m,weather_code,precipitation_probability` +
+      `&daily=temperature_2m_max,temperature_2m_min,wind_speed_10m_max,sunrise,sunset` +
+      `&timezone=auto&forecast_days=2&past_days=1`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('The weather oracle is unavailable. Please try again.');
+    return res.json();
+  }
+
+  // ---------- Render ----------
+  async function render(city) {
+    errorMsg.style.display = 'none';
+    dashboard.style.display = 'none';
+    loadingMsg.style.display = 'flex';
+    alertContainer.innerHTML = '';
+
+    try {
+      const loc = await geocode(city);
+      const w   = await fetchWeather(loc.lat, loc.lon);
+
+      applyTheme(w.current.weather_code, w.current.is_day === 1);
+
+      // Location
+      document.getElementById('locationName').textContent = `${loc.name}, ${loc.country}`;
+      document.getElementById('lastUpdated').textContent =
+        `Last consulted at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+      // Current
+      document.getElementById('currentTemp').textContent = Math.round(w.current.temperature_2m);
+      document.getElementById('currentCondition').textContent = getWeatherInfo(w.current.weather_code).text;
+      document.getElementById('currentIcon').textContent = getWeatherInfo(w.current.weather_code).icon;
+      document.getElementById('feelsLike').textContent =
+        `Feels like ${Math.round(w.current.apparent_temperature)}°C`;
+
+      // Details
+      document.getElementById('humidity').textContent = `${w.current.relative_humidity_2m}%`;
+      document.getElementById('wind').textContent =
+        `${w.current.wind_speed_10m} km/h ${toCompass(w.current.wind_direction_10m)}`;
+      document.getElementById('gusts').textContent = `${w.current.wind_gusts_10m} km/h`;
+      document.getElementById('pressure').textContent = `${Math.round(w.current.surface_pressure)} hPa`;
+      document.getElementById('sunrise').textContent = (w.daily.sunrise?.[1] || '').substring(11, 16) || '—';
+      document.getElementById('sunset').textContent  = (w.daily.sunset?.[1]  || '').substring(11, 16) || '—';
+
+      // Alert
+      if (w.current.wind_gusts_10m > 70) {
+        alertContainer.innerHTML = `
+          <div class="alert-banner">
+            <strong>⚠ A Warning from the Dark</strong>
+            <p>Gusts exceeding 70 km/h are tearing through this place. Secure your belongings and stay indoors—unless you fancy a broomstick ride.</p>
+          </div>`;
+      }
+
+      // Hourly
+      const currentKey = (w.current.time || '').substring(0, 13);
+      let start = w.hourly.time.findIndex(t => t.substring(0, 13) >= currentKey);
+      if (start === -1) start = 0;
+      const end = Math.min(start + 12, w.hourly.time.length);
+
+      const strip = document.getElementById('hourlyForecast');
+      strip.innerHTML = '';
+      for (let i = start; i < end; i++) {
+        const info = getWeatherInfo(w.hourly.weather_code[i]);
+        const precip = w.hourly.precipitation_probability?.[i];
+        strip.innerHTML += `
+          <div class="hour-card">
+            <div class="hour-time">${w.hourly.time[i].substring(11, 16)}</div>
+            <div class="hour-icon">${info.icon}</div>
+            <div class="hour-temp">${Math.round(w.hourly.temperature_2m[i])}°C</div>
+            <div class="hour-humidity">${w.hourly.relative_humidity_2m[i]}%</div>
+            ${precip != null && precip > 0 ? `<div class="hour-precip">✦ ${precip}%</div>` : ''}
+          </div>`;
+      }
+
+      // History
+      const d = w.daily;
+      const histEl = document.getElementById('historicalText');
+      if (d && d.temperature_2m_max?.length >= 2 &&
+          d.temperature_2m_max[0] != null && d.temperature_2m_max[1] != null) {
+        const yMax = Math.round(d.temperature_2m_max[0]);
+        const yMin = Math.round(d.temperature_2m_min[0]);
+        const yWind = Math.round(d.wind_speed_10m_max[0]);
+        const tMax = Math.round(d.temperature_2m_max[1]);
+        const diff = tMax - yMax;
+        const diffText = diff > 0 ? `${diff}°C warmer` : diff < 0 ? `${Math.abs(diff)}°C cooler` : 'unchanged';
+
+        histEl.innerHTML = `
+          Today's forecast high is <strong>${tMax}°C</strong> — that is
+          <span class="accent">${diffText}</span> than yesterday's high of <strong>${yMax}°C</strong>.
+          <div class="history-row">
+            <div class="history-stat">
+              <div class="k">Yesterday's High</div>
+              <div class="v">${yMax}°C</div>
+            </div>
+            <div class="history-stat">
+              <div class="k">Yesterday's Low</div>
+              <div class="v">${yMin}°C</div>
+            </div>
+            <div class="history-stat">
+              <div class="k">Max Wind</div>
+              <div class="v">${yWind} <span style="font-size:0.65rem;color:var(--paper-dim);">km/h</span></div>
+            </div>
+          </div>`;
+      } else {
+        histEl.textContent = 'The archives hold no record for this place.';
+      }
+
+      loadingMsg.style.display = 'none';
+      dashboard.style.display = 'block';
+
+    } catch (err) {
+      console.error(err);
+      loadingMsg.style.display = 'none';
+      errorMsg.style.display = 'block';
+      errorMsg.textContent = err.message || 'Something wicked happened. Please try again.';
+    }
+  }
+
+  // ---------- Events ----------
+  searchForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const city = cityInput.value.trim();
+    if (city) render(city);
+  });
+
+  window.addEventListener('load', () => {
+    cityInput.value = 'Greendale';
+    render('Greendale');
+  });
+</script>
+</body>
+</html>
